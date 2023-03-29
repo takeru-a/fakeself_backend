@@ -1,0 +1,44 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+import "user.proto";
+
+package api;
+
+option go_package = "github.com/takeru-a/fakeself_backend/grpc";
+
+service RoomService{
+    rpc CreateRoom(CreateRoomRequest) returns (RoomResponse){}
+    rpc GetRoom(RoomTokenRequest) returns (RoomResponse){}
+    rpc GetRoomById(RoomIdRequest) returns (RoomResponse){}
+    rpc UpdateRoom(stream UpdateRoomRequest) returns (stream RoomResponse){}
+}
+
+message Room{
+    string Id = 1;
+    User Host = 2;
+    string Token = 3;
+    repeated User Players = 4;
+    repeated string Topic = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}
+
+message RoomResponse { Room room = 1; }
+
+message CreateRoomRequest {
+    User Host = 1;
+    string Token = 2;
+    repeated User Players = 3;
+    repeated string Topic = 4;
+  }
+
+message RoomIdRequest { string Id = 1; }
+message RoomTokenRequest { string Token = 1; }
+
+message UpdateRoomRequest {
+    string Id = 1;
+    optional User Host = 2;
+    optional string Token = 3;
+    repeated User Players = 4;
+    repeated string Topic = 5;
+}
