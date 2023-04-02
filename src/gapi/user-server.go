@@ -8,13 +8,13 @@ import (
 
 type UserServer struct{
 	pb.UnimplementedUserServiceServer
-	userCollection *mongo.Collection
+	DB *mongo.Database
 	userService userservices.UserService
 }
 
-func NewGrpcUserServer(userCollection *mongo.Collection, userService userservices.UserService) (*UserServer, error){
+func NewGrpcUserServer(DB *mongo.Database, userService userservices.UserService) (*UserServer, error){
 	userServer := &UserServer{
-		userCollection: userCollection,
+		DB: DB,
 		userService: userService,
 	}
 

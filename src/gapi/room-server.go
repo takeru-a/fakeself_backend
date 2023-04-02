@@ -8,13 +8,13 @@ import(
 
 type RoomServer struct{
 	pb.UnimplementedRoomServiceServer
-	roomCollection *mongo.Collection
+	DB *mongo.Database
 	roomService roomservices.RoomService
 }
 
-func NewGrpcRoomServer(roomCollection *mongo.Collection, roomService roomservices.RoomService) (*RoomServer, error){
+func NewGrpcRoomServer(DB *mongo.Database, roomService roomservices.RoomService) (*RoomServer, error){
 	roomServer := &RoomServer{
-		roomCollection: roomCollection,
+		DB: DB,
 		roomService: roomService,
 	}
 

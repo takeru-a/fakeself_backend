@@ -3,20 +3,28 @@ package gapi
 import (
 	"context"
 	"strings"
-
+	"math/rand"
 	pb "github.com/takeru-a/fakeself_backend/grpc"
 	"github.com/takeru-a/fakeself_backend/models"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+func GenerateToken(n int) string {
+    var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+    b := make([]rune, n)
+    for i := range b {
+        b[i] = letterRunes[rand.Intn(len(letterRunes))]
+    }
+    return string(b)
+}
 
 func (roomServer *RoomServer) CreateRoom(ctx context.Context, req *pb.CreateRoomRequest) (*pb.RoomResponse, error){
 	room := models.CreateRoomRequest{
-		Host: req.GetHost(),
-		Token: req.GetToken(),
-		Players: req.GetPlayers(),
-		Topic: req.GetTopic(),
+		HostName: req.GetHost(),
+		Token: GenerateToken(32),
+		Topic: []string{"出身地は？", "趣味は？","好きな食べ物は？","特技は？","昔、やっていた部活は？"},
 	}
 	newRoom, err := roomServer.roomService.CreateRoom(&room)
 	if err != nil {
@@ -34,7 +42,6 @@ func (roomServer *RoomServer) CreateRoom(ctx context.Context, req *pb.CreateRoom
 			Players: newRoom.Players,
 			Topic: newRoom.Topic,
 			CreatedAt: timestamppb.New(newRoom.CreateAt),
-			UpdatedAt: timestamppb.New(newRoom.UpdatedAt),
 		},
 	}
 	return res, nil
