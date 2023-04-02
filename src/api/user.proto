@@ -24,15 +24,13 @@ message UserResponse { User user = 1; }
 
 message CreateUserRequest {
     string Name = 1;
-    int64 Answer = 2;
-    int64  Score = 3;
+    string Token = 2;
   }
 
 message UserRequest { string Id = 1; }
 
 message UpdateUserRequest {
     string Id = 1;
-    optional string Name = 2;
-    optional int64 Answer = 3;
-    optional int64 Score = 4;
+    optional int64 Answer = 2;
+    optional int64 Score = 3;
 }

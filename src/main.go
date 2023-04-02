@@ -28,8 +28,7 @@ var (
 	ctx         context.Context
 	mongoclient *mongo.Client
 	userService         userservices.UserService
-	roomCollection      *mongo.Collection
-	userCollection      *mongo.Collection
+	DB                  *mongo.Database
 	roomService         roomservices.RoomService
 )
 
@@ -48,15 +47,11 @@ func init() {
 	}
 
 	fmt.Println("MongoDB successfully connected...")
-
-
-	// Collections
-	userCollection = mongoclient.Database("fakeself").Collection("users")
-	userService = userservices.NewUserService(userCollection, ctx)
+	DB = mongoclient.Database("fakeself")
+	userService = userservices.NewUserService(DB, ctx)
 	
 
-	roomCollection = mongoclient.Database("fakeself").Collection("room")
-	roomService = roomservices.NewRoomService(roomCollection, ctx)
+	roomService = roomservices.NewRoomService(DB, ctx)
 
 	// server = gin.Default()
 }
@@ -68,12 +63,12 @@ func main() {
 
 func startGrpcServer() {
 	
-	userServer, err := gapi.NewGrpcUserServer(userCollection, userService)
+	userServer, err := gapi.NewGrpcUserServer(DB, userService)
 	if err != nil {
 		log.Fatal("cannot create grpc userServer: ", err)
 	}
 
-	roomServer, err := gapi.NewGrpcRoomServer(roomCollection, roomService)
+	roomServer, err := gapi.NewGrpcRoomServer(DB, roomService)
 	if err != nil {
 		log.Fatal("cannot create grpc roomServer: ", err)
 	}

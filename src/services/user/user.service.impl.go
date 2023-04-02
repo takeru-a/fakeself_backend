@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/takeru-a/fakeself_backend/models"
@@ -13,36 +14,59 @@ import (
 )
 
 type UserServiceImpl struct {
-	userCollection *mongo.Collection
+	DB *mongo.Database
 	ctx            context.Context
 }
 
-func NewUserService(userCollection *mongo.Collection, ctx context.Context) UserService {
-	return &UserServiceImpl{userCollection, ctx}
+func NewUserService(DB *mongo.Database, ctx context.Context) UserService {
+	return &UserServiceImpl{DB, ctx}
 }
 
 func (ur *UserServiceImpl) CreateUser(user *models.CreateUserRequest) (*models.User,error){
+	userCollection := ur.DB.Collection("users")
+	roomCollection := ur.DB.Collection("room")
 	user.CreateAt = time.Now()
-	user.UpdatedAt = user.CreateAt
-	res, err := ur.userCollection.InsertOne(ur.ctx, user)
+	res, err := userCollection.InsertOne(ur.ctx, &models.DBUser{
+		Name: user.Name,
+		Answer: user.Answer,
+		Score: user.Score,
+		CreateAt: user.CreateAt,
+	})
 	if err != nil{
 		return nil, err
 	}
-
 	var newUser *models.User
 	query := bson.M{"_id": res.InsertedID}
-	if err = ur.userCollection.FindOne(ur.ctx, query).Decode(&newUser); err != nil {
+	
+	if err = userCollection.FindOne(ur.ctx, query).Decode(&newUser); err != nil {
 		return nil, err
 	}
+	var updateRoom *models.Room
+	err = roomCollection.FindOne(ur.ctx, bson.M{"token": user.Token}).Decode(&updateRoom)
+    if err != nil {
+        return nil, err
+    }
+	log.Printf("%s", updateRoom.Id)
+	update := bson.M{"players": newUser}
+	_, err = roomCollection.UpdateOne(ur.ctx,
+		bson.M{"_id": updateRoom.Id},
+        bson.M{
+        "$push": update,
+        },
+	)
+	if err != nil {
+        return nil, err
+    }
 
 	return newUser, nil
 }
 
 func (ur *UserServiceImpl) UpdateUser(id string, data *models.UpdateUser) (*models.User, error) {
+	userCollection := ur.DB.Collection("users")
 	obId, _ := primitive.ObjectIDFromHex(id)
 	query := bson.D{{Key: "_id", Value: obId}}
 	update := bson.D{{Key: "$set", Value: data}}
-	res := ur.userCollection.FindOneAndUpdate(ur.ctx, query, update, options.FindOneAndUpdate().SetReturnDocument(1))
+	res := userCollection.FindOneAndUpdate(ur.ctx, query, update, options.FindOneAndUpdate().SetReturnDocument(1))
 
 	var updatedUser *models.User
 	if err := res.Decode(&updatedUser); err != nil {
@@ -53,13 +77,14 @@ func (ur *UserServiceImpl) UpdateUser(id string, data *models.UpdateUser) (*mode
 }
 
 func (ur *UserServiceImpl) FindUserById(id string) (*models.User, error) {
+	userCollection := ur.DB.Collection("users")
 	obId, _ := primitive.ObjectIDFromHex(id)
 
 	query := bson.M{"_id": obId}
 
 	var user *models.User
 
-	if err := ur.userCollection.FindOne(ur.ctx, query).Decode(&user); err != nil {
+	if err := userCollection.FindOne(ur.ctx, query).Decode(&user); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errors.New("no document with that Id exists")
 		}

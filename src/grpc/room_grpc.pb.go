@@ -23,6 +23,7 @@ const (
 	RoomService_GetRoom_FullMethodName     = "/api.RoomService/GetRoom"
 	RoomService_GetRoomById_FullMethodName = "/api.RoomService/GetRoomById"
 	RoomService_UpdateRoom_FullMethodName  = "/api.RoomService/UpdateRoom"
+	RoomService_WatchRoom_FullMethodName   = "/api.RoomService/WatchRoom"
 )
 
 // RoomServiceClient is the client API for RoomService service.
@@ -32,7 +33,8 @@ type RoomServiceClient interface {
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*RoomResponse, error)
 	GetRoom(ctx context.Context, in *RoomTokenRequest, opts ...grpc.CallOption) (*RoomResponse, error)
 	GetRoomById(ctx context.Context, in *RoomIdRequest, opts ...grpc.CallOption) (*RoomResponse, error)
-	UpdateRoom(ctx context.Context, opts ...grpc.CallOption) (RoomService_UpdateRoomClient, error)
+	UpdateRoom(ctx context.Context, in *UpdateRoomRequest, opts ...grpc.CallOption) (*RoomResponse, error)
+	WatchRoom(ctx context.Context, opts ...grpc.CallOption) (RoomService_WatchRoomClient, error)
 }
 
 type roomServiceClient struct {
@@ -70,30 +72,39 @@ func (c *roomServiceClient) GetRoomById(ctx context.Context, in *RoomIdRequest, 
 	return out, nil
 }
 
-func (c *roomServiceClient) UpdateRoom(ctx context.Context, opts ...grpc.CallOption) (RoomService_UpdateRoomClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RoomService_ServiceDesc.Streams[0], RoomService_UpdateRoom_FullMethodName, opts...)
+func (c *roomServiceClient) UpdateRoom(ctx context.Context, in *UpdateRoomRequest, opts ...grpc.CallOption) (*RoomResponse, error) {
+	out := new(RoomResponse)
+	err := c.cc.Invoke(ctx, RoomService_UpdateRoom_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &roomServiceUpdateRoomClient{stream}
+	return out, nil
+}
+
+func (c *roomServiceClient) WatchRoom(ctx context.Context, opts ...grpc.CallOption) (RoomService_WatchRoomClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RoomService_ServiceDesc.Streams[0], RoomService_WatchRoom_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &roomServiceWatchRoomClient{stream}
 	return x, nil
 }
 
-type RoomService_UpdateRoomClient interface {
-	Send(*UpdateRoomRequest) error
+type RoomService_WatchRoomClient interface {
+	Send(*Empty) error
 	Recv() (*RoomResponse, error)
 	grpc.ClientStream
 }
 
-type roomServiceUpdateRoomClient struct {
+type roomServiceWatchRoomClient struct {
 	grpc.ClientStream
 }
 
-func (x *roomServiceUpdateRoomClient) Send(m *UpdateRoomRequest) error {
+func (x *roomServiceWatchRoomClient) Send(m *Empty) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *roomServiceUpdateRoomClient) Recv() (*RoomResponse, error) {
+func (x *roomServiceWatchRoomClient) Recv() (*RoomResponse, error) {
 	m := new(RoomResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -108,7 +119,8 @@ type RoomServiceServer interface {
 	CreateRoom(context.Context, *CreateRoomRequest) (*RoomResponse, error)
 	GetRoom(context.Context, *RoomTokenRequest) (*RoomResponse, error)
 	GetRoomById(context.Context, *RoomIdRequest) (*RoomResponse, error)
-	UpdateRoom(RoomService_UpdateRoomServer) error
+	UpdateRoom(context.Context, *UpdateRoomRequest) (*RoomResponse, error)
+	WatchRoom(RoomService_WatchRoomServer) error
 	mustEmbedUnimplementedRoomServiceServer()
 }
 
@@ -125,8 +137,11 @@ func (UnimplementedRoomServiceServer) GetRoom(context.Context, *RoomTokenRequest
 func (UnimplementedRoomServiceServer) GetRoomById(context.Context, *RoomIdRequest) (*RoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRoomById not implemented")
 }
-func (UnimplementedRoomServiceServer) UpdateRoom(RoomService_UpdateRoomServer) error {
-	return status.Errorf(codes.Unimplemented, "method UpdateRoom not implemented")
+func (UnimplementedRoomServiceServer) UpdateRoom(context.Context, *UpdateRoomRequest) (*RoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) WatchRoom(RoomService_WatchRoomServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchRoom not implemented")
 }
 func (UnimplementedRoomServiceServer) mustEmbedUnimplementedRoomServiceServer() {}
 
@@ -195,26 +210,44 @@ func _RoomService_GetRoomById_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RoomService_UpdateRoom_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(RoomServiceServer).UpdateRoom(&roomServiceUpdateRoomServer{stream})
+func _RoomService_UpdateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).UpdateRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_UpdateRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).UpdateRoom(ctx, req.(*UpdateRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type RoomService_UpdateRoomServer interface {
+func _RoomService_WatchRoom_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RoomServiceServer).WatchRoom(&roomServiceWatchRoomServer{stream})
+}
+
+type RoomService_WatchRoomServer interface {
 	Send(*RoomResponse) error
-	Recv() (*UpdateRoomRequest, error)
+	Recv() (*Empty, error)
 	grpc.ServerStream
 }
 
-type roomServiceUpdateRoomServer struct {
+type roomServiceWatchRoomServer struct {
 	grpc.ServerStream
 }
 
-func (x *roomServiceUpdateRoomServer) Send(m *RoomResponse) error {
+func (x *roomServiceWatchRoomServer) Send(m *RoomResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *roomServiceUpdateRoomServer) Recv() (*UpdateRoomRequest, error) {
-	m := new(UpdateRoomRequest)
+func (x *roomServiceWatchRoomServer) Recv() (*Empty, error) {
+	m := new(Empty)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -240,11 +273,15 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetRoomById",
 			Handler:    _RoomService_GetRoomById_Handler,
 		},
+		{
+			MethodName: "UpdateRoom",
+			Handler:    _RoomService_UpdateRoom_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UpdateRoom",
-			Handler:       _RoomService_UpdateRoom_Handler,
+			StreamName:    "WatchRoom",
+			Handler:       _RoomService_WatchRoom_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
